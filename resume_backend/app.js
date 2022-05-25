@@ -3,6 +3,7 @@ const userRoute = require('./routes/user');
 const resumeRoute = require('./routes/resume')
 const dotenv = require('dotenv');
 const head_auth = require('./middleware/header')
+const cors = require('cors');
 
 require("./config/db");
 
@@ -10,6 +11,8 @@ const app = express();
 dotenv.config();
 
 const PORT = process.env.PORT;
+app.use(cors());
+app.options('*', cors());
 app.use(express.json())
 app.use(head_auth)
 app.use("/user",userRoute);
