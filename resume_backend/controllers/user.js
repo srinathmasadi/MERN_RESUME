@@ -17,7 +17,13 @@ exports.addUser = async(req, res) => {
                 if(password === confirmPassword) {
                     const data = new User({name,email,phone,password,confirmPassword})
                     const response = await data.save();
-                    res.status(200).json({message:"User Saved Successfully",data:response}) 
+                    res.status(200).json({
+                        message:"User Saved Successfully",
+                        _id:response.id,
+                        name:response.name,
+                        email:response.email,
+                        token:generateToken(response._id)
+                }) 
                 } else{
                     res.status(400).json({message:"Passwords Not matching"})
                 }
@@ -40,17 +46,14 @@ exports.logInUser = async(req,res)=> {
         const userLogin = await User.findOne({email});
         const isMatch = await bcrypt.compare(password, userLogin.password);
         if(isMatch) {
-            const token = jwt.sign(
-                {email:userLogin.email, userId:userLogin._id},
-                "secret_this_should_be_longer",
-                {expiresIn:"1h"}
-             );
-             res.send({
-                 message:"User Logged in Successsfully",
-                 token: token,
-                 expiresIn: 3600,
-                 userId: userLogin._id
-               });
+            
+            res.json({
+                message:"User Logged in successfully",
+                _id:userLogin._id,
+                name:userLogin.name,
+                email:userLogin.email,
+                token:generateToken(userLogin._id)
+            })
             
         }else{
             res.status(400).json({message:"Invalid Credentials"});
@@ -65,4 +68,28 @@ exports.logInUser = async(req,res)=> {
         res.status(400).json({message:"Something went wrong",data:e});
         console.log(e)
     }
+}
+
+//Generate Token
+
+const generateToken = (id) => {
+    return jwt.sign({id}, process.env.JWT_SECRET_KEY,{
+        expiresIn:'30d'
+    })
+}
+
+exports.getUser = async(req,res)=> {
+    try {
+       const {_id,name,email} = await User.findById(req.user.id)
+       res.status(200).json(
+           {
+               message:"User Fetched Successfully",
+               id:_id,
+               name,
+               email
+            }
+           )
+    } catch (error) {
+        res.status(400).json({message:"something went wrong"})
+    } 
 }

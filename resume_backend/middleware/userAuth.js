@@ -1,12 +1,32 @@
 const jwt = require("jsonwebtoken");
+const User = require('../models/userSchema')
 
-module.exports = (req, res, next) => {
-  try {
-    const token = req.headers.authorization.split(" ")[1];
-    const decodedToken = jwt.verify(token, "secret_this_should_be_longer");
-    req.userData = { email: decodedToken.email, userId: decodedToken.userId };
-    next();
-  } catch (error) {
-    res.status(401).json({ message: "Auth failed!" });
+
+
+const verifyUser = async (req, res, next)=> {
+  let token;
+
+  if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
+    try {
+      //Get Token
+      token = req.headers.authorization.split(' ')[1]
+
+      //Verify token
+
+      const decode = jwt.verify(token, process.env.JWT_SECRET_KEY)
+      //Get user from the token
+
+      req.user = await User.findById(decode.id).select('-password')
+      next()
+    } catch (error) {
+      console.log(error);
+      res.status(401).json({message:"Not authorised"})
+    }
+    
   }
-};
+  if(!token){
+    res.status(401).json({message:"Provide token in header"})
+  }
+
+}
+module.exports = {verifyUser}
